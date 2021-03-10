@@ -90,20 +90,21 @@ def compute_log_metrics(model, x_train,
     bedrock.log_metric("Accuracy", acc)
     # TODO - Bedrock model monitoring: Fill in the blanks
     # Add ROC AUC and Avg precision
-    # bedrock.log_metric("...", ...)
+    bedrock.log_metric("ROC AUC", roc_auc)
+    bedrock.log_metric("Avg precision", avg_prc)
 
     # TODO - Explainability metrics: Fill in the blanks
     # Bedrock Model Analyzer: generates model explainability and fairness metrics
     # Requires model object from pipeline to be passed in
     analyzer = ModelAnalyzer(model[1], model_name=model_name, model_type=model_type)\
-                    .train_features(...)\
-                    .test_features(...)
+                    .train_features(x_train)\
+                    .test_features(x_test)
     
     # TODO - Fairness metrics: Fill in the blanks
     # Apply fairness config to the Bedrock Model Analyzer instance
-    analyzer.fairness_config(...)\
-        .test_labels(...)\
-        .test_inference(...)
+    analyzer.fairness_config(CONFIG_FAI)\
+        .test_labels(y_test)\
+        .test_inference(test_pred)
     
     # Return the 4 metrics
     return analyzer.analyze()
@@ -157,7 +158,7 @@ def main():
     # TODO - Save the model artefact! by filling in the blanks
     # So that the model is viewable on the Bedrock UI
     # Hint: fill in the file path that has been defined as a constant above
-    with open(..., "wb") as model_file:
+    with open(OUTPUT_MODEL_PATH, "wb") as model_file:
         pickle.dump(model, model_file)
     
     # IMPORTANT: LOG TRAINING MODEL ON UI to compare to DEPLOYED MODEL
