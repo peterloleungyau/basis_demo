@@ -10,9 +10,9 @@
 version = "1.0"
 
 # TODO: name the stanza
-... {
+train {
     # TODO: name the step
-    step ... {
+    step train {
         image = "continuumio/miniconda3:latest"
         install = [
             "conda env update -f environment-train.yaml",
@@ -22,8 +22,8 @@ version = "1.0"
         script = [{sh = ["python train.py"]}]
         # TODO: Increase the resources... reasonably!
         resources {
-            cpu = "0.5"
-            memory = "2G"
+            cpu = "1"
+            memory = "4G"
         }
         parameters {
             TRAINING_DATA_AWS_BUCKET = "s3://veritas-credit-scoring/data/training/latest"
@@ -32,7 +32,7 @@ version = "1.0"
 }
 
 # TODO: name the stanza
-... {
+serve {
     image = "python:3.7"
     install = [
         "pip3 install --upgrade pip",
