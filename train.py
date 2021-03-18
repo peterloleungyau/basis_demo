@@ -46,11 +46,11 @@ OUTPUT_MODEL_PATH = "/artefact/model.pkl"
 FEATURE_COLS_PATH = "/artefact/feature_cols.pkl"
 
 CONFIG_FAI = {
-    'SEX': {
+    'large_ring': {
         'privileged_attribute_values': [1],
-        'privileged_group_name': 'Male',  # privileged group name corresponding to values=[1]
-        'unprivileged_attribute_values': [2],
-        'unprivileged_group_name': 'Female',  # unprivileged group name corresponding to values=[0]
+        'privileged_group_name': 'Large',  # privileged group name corresponding to values=[1]
+        'unprivileged_attribute_values': [0],
+        'unprivileged_group_name': 'Small',  # unprivileged group name corresponding to values=[0]
     }
 }
 
@@ -64,14 +64,14 @@ def compute_log_metrics(model, x_train,
                         model_name="tree_model", 
                         model_type=ModelTypes.TREE):
     """Compute and log metrics."""
-    test_prob = model.predict_proba(x_test)[:, 1]
-    test_pred = np.where(test_prob > best_th, 1, 0)
+    test_prob = model.predict_proba(x_test)
+    test_pred = model.predict(x_test)
 
     acc = metrics.accuracy_score(y_test, test_pred)
-    precision = metrics.precision_score(y_test, test_pred)
-    recall = metrics.recall_score(y_test, test_pred)
-    f1_score = metrics.f1_score(y_test, test_pred)
-    roc_auc = metrics.roc_auc_score(y_test, test_prob)
+    precision = metrics.precision_score(y_test, test_pred, average='macro')
+    recall = metrics.recall_score(y_test, test_pred, average='macro')
+    f1_score = metrics.f1_score(y_test, test_pred, average='macro')
+    roc_auc = metrics.roc_auc_score(y_test, test_prob, multi_class='ovr')
     avg_prc = metrics.average_precision_score(y_test, test_prob)
     print("Evaluation\n"
           f"  Accuracy          = {acc:.4f}\n"
@@ -90,6 +90,9 @@ def compute_log_metrics(model, x_train,
     bedrock.log_metric("Accuracy", acc)
     # TODO - Bedrock model monitoring: Fill in the blanks
     # Add ROC AUC and Avg precision
+    bedrock.log_metric("Precision", precision)
+    bedrock.log_metric("Recall", recall)
+    bedrock.log_metric("F1 Score", f1_score)
     bedrock.log_metric("ROC AUC", roc_auc)
     bedrock.log_metric("Avg precision", avg_prc)
 
@@ -111,19 +114,23 @@ def compute_log_metrics(model, x_train,
 
 def main():
     # Extraneous columns (as might be determined through feature selection)
-    drop_cols = ['ID']
+    drop_cols = []
 
     # Load into Dataframes
     # x_<name> : features
     # y_<name> : labels
-    x_train, y_train = utils.load_dataset(os.path.join('data', 'creditdata', 'creditdata_train_v2.csv'), drop_columns=drop_cols)
-    x_test, y_test = utils.load_dataset(os.path.join('data', 'creditdata', 'creditdata_test_v2.csv'), drop_columns=drop_cols)
+    x_train, y_train = utils.load_dataset(os.path.join('data', 'abalone_train.csv'), target = 'Type', drop_columns=drop_cols)
+    x_test, y_test = utils.load_dataset(os.path.join('data', 'abalone_test.csv'), target = 'Type', drop_columns=drop_cols)
+    
+    # for testing only
+    x_train["large_ring"] = (x_train["Rings"] > 10).astype(int)
+    x_test["large_ring"] = (x_test["Rings"] > 10).astype(int)
 
     # MODEL 1: Baseline model
     # Use best parameters from a model selection and threshold tuning process
     best_regularizer = 1e-1
     best_th = 0.43
-    model = utils.train_log_reg_model(x_train, y_train, seed=0, C=best_regularizer, upsample=True, verbose=True)
+    model = utils.train_log_reg_model(x_train, y_train, seed=0, C=best_regularizer, upsample=False, verbose=True)
     model_name = "logreg_model"
     model_type = ModelTypes.LINEAR
 
@@ -162,8 +169,8 @@ def main():
         pickle.dump(model, model_file)
     
     # IMPORTANT: LOG TRAINING MODEL ON UI to compare to DEPLOYED MODEL
-    train_prob = model.predict_proba(x_train)[:, 1]
-    train_pred = np.where(train_prob > best_th, 1, 0)
+    #train_prob = model.predict_proba(x_train)[:, 1]
+    train_pred = model.predict(x_train)
 
     # Add the Model Monitoring Service and export the metrics
     ModelMonitoringService.export_text(

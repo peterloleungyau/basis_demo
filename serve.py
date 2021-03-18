@@ -22,29 +22,15 @@ MODEL_PATH = "/artefact/model.pkl"
 
 # Ordered list of model features
 FEATURES = [ 
-    'LIMIT_BAL',
-    'SEX',
-    'EDUCATION',
-    'MARRIAGE',
-    'AGE',
-    'PAY_1',
-    'PAY_2',
-    'PAY_3',
-    'PAY_4',
-    'PAY_5',
-    'PAY_6',
-    'BILL_AMT1',
-    'BILL_AMT2',
-    'BILL_AMT3',
-    'BILL_AMT4',
-    'BILL_AMT5',
-    'BILL_AMT6',
-    'PAY_AMT1',
-    'PAY_AMT2',
-    'PAY_AMT3',
-    'PAY_AMT4',
-    'PAY_AMT5',
-    'PAY_AMT6'
+    'LongestShell',
+    'Diameter',
+    'Height',
+    'WholeWeight',
+    'ShuckedWeight',
+    'VisceraWeight',
+    'ShellWeight',
+    'Rings',
+    'large_ring'
 ]
 
 # ---------------------------------
@@ -69,7 +55,7 @@ def predict_proba(request_json,
     if features is not None:
         predicted_prob = (
             model
-            .predict_proba(np.array(features).reshape(1, -1))[:, 1]
+            .predict_proba(np.array(features).reshape(1, -1))
             .item()
         )
         return features, predicted_prob
@@ -101,7 +87,7 @@ def get_metrics():
     return Response(body, content_type=content_type)
 
 # TODO - Customise route for API endpoint: model prediction and test with a POST request
-@app.route("/hellothere", methods=["POST"])
+@app.route("/infer", methods=["POST"])
 def get_inference():
     """Returns the predicted class probabilies given some input data in JSON
     """    

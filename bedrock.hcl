@@ -7,7 +7,7 @@
 
 
 # IMPORTANT: Bedrock HCL version
-version = "1.0"
+version = "1.1"
 
 # TODO: name the stanza
 train {
