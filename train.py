@@ -60,46 +60,29 @@ CONFIG_FAI = {
 
 def compute_log_metrics(model, x_train, 
                         x_test, y_test, 
-                        best_th=0.5,
                         model_name="tree_model", 
                         model_type=ModelTypes.TREE):
     """Compute and log metrics."""
-    test_prob = model.predict_proba(x_test)
     test_pred = model.predict(x_test)
 
-    acc = metrics.accuracy_score(y_test, test_pred)
-    precision = metrics.precision_score(y_test, test_pred, average='macro')
-    recall = metrics.recall_score(y_test, test_pred, average='macro')
-    f1_score = metrics.f1_score(y_test, test_pred, average='macro')
-    roc_auc = metrics.roc_auc_score(y_test, test_prob, multi_class='ovr')
-    avg_prc = metrics.average_precision_score(y_test, test_prob)
+    r2_score = metrics.r2_score(y_test, test_pred)
+    mse = metrics.mean_squared_error(y_test, test_pred)
     print("Evaluation\n"
-          f"  Accuracy          = {acc:.4f}\n"
-          f"  Precision         = {precision:.4f}\n"
-          f"  Recall            = {recall:.4f}\n"
-          f"  F1 score          = {f1_score:.4f}\n"
-          f"  ROC AUC           = {roc_auc:.4f}\n"
-          f"  Average precision = {avg_prc:.4f}")
-
+          f"  R2 score          = {r2_score:.4f}\n"
+          f"  mean square error = {mse:.4f}")
 
     # Bedrock Logger: captures model metrics
     bedrock = BedrockApi(logging.getLogger(__name__))
-    bedrock.log_chart_data(y_test.astype(int).tolist(),
-                           test_prob.flatten().tolist())
 
-    bedrock.log_metric("Accuracy", acc)
+    bedrock.log_metric("R2 score", r2_score)
     # TODO - Bedrock model monitoring: Fill in the blanks
     # Add ROC AUC and Avg precision
-    bedrock.log_metric("Precision", precision)
-    bedrock.log_metric("Recall", recall)
-    bedrock.log_metric("F1 Score", f1_score)
-    bedrock.log_metric("ROC AUC", roc_auc)
-    bedrock.log_metric("Avg precision", avg_prc)
+    bedrock.log_metric("Mean Square Error", mse)
 
     # TODO - Explainability metrics: Fill in the blanks
     # Bedrock Model Analyzer: generates model explainability and fairness metrics
     # Requires model object from pipeline to be passed in
-    analyzer = ModelAnalyzer(model[1], model_name=model_name, model_type=model_type)\
+    analyzer = ModelAnalyzer(model, model_name=model_name, model_type=model_type)\
                     .train_features(x_train)\
                     .test_features(x_test)
     
@@ -119,19 +102,17 @@ def main():
     # Load into Dataframes
     # x_<name> : features
     # y_<name> : labels
-    x_train, y_train = utils.load_dataset(os.path.join('data', 'abalone_train.csv'), target = 'Type', drop_columns=drop_cols)
-    x_test, y_test = utils.load_dataset(os.path.join('data', 'abalone_test.csv'), target = 'Type', drop_columns=drop_cols)
-    
+    x_train, y_train = utils.load_dataset(os.path.join('data', 'bostonhousing_train.csv'), target = 'medv')
+    x_test, y_test = utils.load_dataset(os.path.join('data', 'bostonhousing_test.csv'), target = 'medv')
     # for testing only
-    x_train["large_ring"] = (x_train["Rings"] > 10).astype(int)
-    x_test["large_ring"] = (x_test["Rings"] > 10).astype(int)
+    x_train["old_house"] = (x_train["age"] > 50).astype(int)
+    x_test["old_house"] = (x_test["age"] > 50).astype(int)
 
     # MODEL 1: Baseline model
     # Use best parameters from a model selection and threshold tuning process
-    best_regularizer = 1e-1
-    best_th = 0.43
-    model = utils.train_log_reg_model(x_train, y_train, seed=0, C=best_regularizer, upsample=False, verbose=True)
-    model_name = "logreg_model"
+    model = LinearRegression()
+    model.fit(x_train, y_train)
+    model_name = "reg_model"
     model_type = ModelTypes.LINEAR
 
     # TODO - Optional: Switch to random forest model
@@ -159,7 +140,6 @@ def main():
         fairness_metrics,
     ) = compute_log_metrics(model=model, x_train=x_train, 
                             x_test=x_test, y_test=y_test, 
-                            best_th=best_th,
                             model_name=model_name, model_type=model_type)
 
     # TODO - Save the model artefact! by filling in the blanks
@@ -169,7 +149,6 @@ def main():
         pickle.dump(model, model_file)
     
     # IMPORTANT: LOG TRAINING MODEL ON UI to compare to DEPLOYED MODEL
-    #train_prob = model.predict_proba(x_train)[:, 1]
     train_pred = model.predict(x_train)
 
     # Add the Model Monitoring Service and export the metrics
@@ -177,7 +156,6 @@ def main():
         features=x_train.iteritems(),
         inference=train_pred.tolist(),
     )
-
     print("Done!")
 
 if __name__ == "__main__":
