@@ -89,9 +89,10 @@ def compute_log_metrics(model, x_train,
     
     # TODO - Fairness metrics: Fill in the blanks
     # Apply fairness config to the Bedrock Model Analyzer instance
-    analyzer.fairness_config(CONFIG_FAI)\
-        .test_labels(y_test)\
-        .test_inference(test_pred)
+    # seems only for binary classification
+    #analyzer.fairness_config(CONFIG_FAI)\
+    #    .test_labels(y_test)\
+    #    .test_inference(test_pred)
     
     # Return the 4 metrics
     return analyzer.analyze()
