@@ -47,11 +47,11 @@ OUTPUT_MODEL_PATH = "/artefact/model.pkl"
 FEATURE_COLS_PATH = "/artefact/feature_cols.pkl"
 
 CONFIG_FAI = {
-    'large_ring': {
+    'old_house': {
         'privileged_attribute_values': [1],
-        'privileged_group_name': 'Large',  # privileged group name corresponding to values=[1]
+        'privileged_group_name': 'Old',  # privileged group name corresponding to values=[1]
         'unprivileged_attribute_values': [0],
-        'unprivileged_group_name': 'Small',  # unprivileged group name corresponding to values=[0]
+        'unprivileged_group_name': 'NotOld',  # unprivileged group name corresponding to values=[0]
     }
 }
 
