@@ -55,8 +55,8 @@ def predict_proba(request_json,
     if features is not None:
         predicted_prob = (
             model
-            .predict_proba(np.array(features).reshape(1, -1))
-            .item()
+            .predict(np.array(features).reshape(1, -1))
+            #.item()
         )
         return features, predicted_prob
     return np.NaN
